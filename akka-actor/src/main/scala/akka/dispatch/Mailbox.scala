@@ -274,6 +274,9 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
         if ((left > 1) && (!dispatcher.isThroughputDeadlineTimeDefined || (System.nanoTime - deadlineNs) < 0))
           processMailbox(left - 1, deadlineNs)
       }
+      else {
+        messageQueue.onFinishedProcessingHook()
+      }
     }
 
   /**
@@ -357,6 +360,8 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
  * It needs to at least support N producers and 1 consumer thread-safely.
  */
 trait MessageQueue {
+
+  var onFinishedProcessingHook: () => Unit = () => ()
 
   /**
    * Try to enqueue the message to this queue, or throw an exception.

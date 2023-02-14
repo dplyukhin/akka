@@ -309,7 +309,7 @@ trait ScalaActorSelection {
  * message is delivered by traversing the various actor paths involved.
  */
 @SerialVersionUID(2L) // it has protobuf serialization in akka-remote
-private[akka] final case class ActorSelectionMessage(
+final case class ActorSelectionMessage(
     msg: Any,
     elements: immutable.Iterable[SelectionPathElement],
     wildcardFanOut: Boolean)
@@ -330,7 +330,7 @@ private[akka] final case class ActorSelectionMessage(
  */
 @nowarn("msg=@SerialVersionUID has no effect on traits")
 @SerialVersionUID(1L)
-private[akka] sealed trait SelectionPathElement
+sealed trait SelectionPathElement
 
 /**
  * INTERNAL API

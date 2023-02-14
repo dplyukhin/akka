@@ -25,6 +25,8 @@ import akka.annotation.DoNotInherit
 trait ActorRef[-T] extends RecipientRef[T] with java.lang.Comparable[ActorRef[_]] with java.io.Serializable {
   this: InternalRecipientRef[T] =>
 
+  def classicRef: classic.ActorRef = null
+
   /**
    * Send a message to the Actor referenced by this ActorRef using *at-most-once*
    * messaging semantics.
