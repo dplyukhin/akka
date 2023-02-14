@@ -4,7 +4,7 @@
 
 package akka.actor.typed.scaladsl
 
-import scala.concurrent.{ ExecutionContextExecutor, Future }
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.Try
@@ -13,6 +13,7 @@ import akka.actor.ClassicActorContextProvider
 import akka.actor.typed._
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
+import akka.dispatch.Mailbox
 import akka.pattern.StatusReply
 import akka.util.Timeout
 
@@ -38,6 +39,8 @@ import akka.util.Timeout
  */
 @DoNotInherit
 trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvider {
+
+  def mailbox: Mailbox = classicActorContext.mailbox
 
   /**
    * Get the `javadsl` of this `ActorContext`.
