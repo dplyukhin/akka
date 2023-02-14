@@ -14,7 +14,7 @@ import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 import akka.actor.dungeon.ChildrenContainer
 import akka.annotation.{InternalApi, InternalStableApi}
-import akka.dispatch.{Envelope, Mailbox, MessageDispatcher}
+import akka.dispatch.{Envelope, Mailbox, MessageDispatcher, MessageQueue}
 import akka.dispatch.sysmsg._
 import akka.event.Logging.{Debug, Error, LogEvent}
 import akka.japi.Procedure
@@ -45,7 +45,9 @@ import akka.util.unused
  */
 trait ActorContext extends ActorRefFactory with ClassicActorContextProvider {
 
-  def mailbox: Mailbox
+  private[akka] def mailbox: Mailbox
+
+  def queue: MessageQueue = mailbox.messageQueue
 
   /**
    * The ActorRef representing this actor
