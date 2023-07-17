@@ -785,6 +785,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
           settings.Advanced.HandshakeRetryInterval,
           settings.Advanced.InjectHandshakeInterval,
           Duration.Undefined))
+      .via(Flow.fromGraph(settings.Advanced.Egress))
       .viaMat(createEncoder(bufferPool, streamId))(Keep.right)
   }
 
@@ -889,6 +890,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   def inboundSink(bufferPool: EnvelopeBufferPool): Sink[InboundEnvelope, Future[Done]] =
     Flow[InboundEnvelope]
       .via(createDeserializer(bufferPool))
+      .via(Flow.fromGraph(settings.Advanced.Ingress))
       .via(if (settings.Advanced.TestMode) new InboundTestStage(this, testState) else Flow[InboundEnvelope])
       .via(flushReplier(expectedAcks = settings.Advanced.InboundLanes))
       .via(terminationHintReplier(inControlStream = false))

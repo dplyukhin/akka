@@ -23,8 +23,9 @@ private[remote] object OutboundEnvelope {
 /**
  * INTERNAL API
  */
-private[remote] trait OutboundEnvelope extends NoSerializationVerificationNeeded {
-  def recipient: OptionVal[RemoteActorRef]
+trait OutboundEnvelope extends NoSerializationVerificationNeeded {
+  private[remote] def recipient: OptionVal[RemoteActorRef]
+  def target: OptionVal[ActorRef] = recipient
   def message: AnyRef
   def sender: OptionVal[ActorRef]
 
