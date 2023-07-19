@@ -11,14 +11,13 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.NotUsed
 import akka.japi.Util.immutableSeq
-import akka.stream.{ActorMaterializerSettings, FlowShape}
+import akka.stream.ActorMaterializerSettings
 import akka.util.Helpers.ConfigOps
 import akka.util.Helpers.Requiring
 import akka.util.Helpers.toRootLowerCase
 import akka.util.WildcardIndex
 import akka.util.ccompat.JavaConverters._
 import akka.io.dns.internal.AsyncDnsResolver
-import akka.stream.stage.GraphStage
 
 /** INTERNAL API */
 private[akka] final class ArterySettings private (config: Config) {
@@ -107,18 +106,6 @@ private[akka] final class ArterySettings private (config: Config) {
     @nowarn("msg=deprecated")
     val ControlStreamMaterializerSettings: ActorMaterializerSettings =
       ActorMaterializerSettings(config.getConfig("materializer")).withDispatcher(ControlStreamDispatcher)
-
-    val Ingress: GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] = {
-      val clazzName = getString("ingress-stage")
-      val clazz = getClass.getClassLoader.loadClass(clazzName)
-      clazz.getDeclaredConstructor().newInstance().asInstanceOf[GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]]]
-    }
-
-    val Egress: GraphStage[FlowShape[OutboundEnvelope, OutboundEnvelope]] = {
-      val clazzName = getString("egress-stage")
-      val clazz = getClass.getClassLoader.loadClass(clazzName)
-      clazz.getDeclaredConstructor().newInstance().asInstanceOf[GraphStage[FlowShape[OutboundEnvelope, OutboundEnvelope]]]
-    }
 
     val OutboundLanes: Int = getInt("outbound-lanes").requiring(n => n > 0, "outbound-lanes must be greater than zero")
     val InboundLanes: Int = getInt("inbound-lanes").requiring(n => n > 0, "inbound-lanes must be greater than zero")

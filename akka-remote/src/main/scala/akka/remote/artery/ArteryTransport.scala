@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
-
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -16,9 +15,7 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.util.control.NoStackTrace
-
 import scala.annotation.nowarn
-
 import akka.Done
 import akka.NotUsed
 import akka.actor._
@@ -44,8 +41,7 @@ import akka.stream._
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
-import akka.util.OptionVal
-import akka.util.WildcardIndex
+import akka.util.{OptionVal, Timeout, WildcardIndex}
 
 /**
  * INTERNAL API
@@ -774,6 +770,9 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       bufferPool: EnvelopeBufferPool,
       streamId: Int): Flow[OutboundEnvelope, EnvelopeBuffer, OutboundCompressionAccess] = {
 
+    val egress = system.actorOf(Props[Forwarder]())
+    implicit val askTimeout: Timeout = 50.seconds
+
     Flow
       .fromGraph(killSwitch.flow[OutboundEnvelope])
       .via(
@@ -785,7 +784,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
           settings.Advanced.HandshakeRetryInterval,
           settings.Advanced.InjectHandshakeInterval,
           Duration.Undefined))
-      .via(Flow.fromGraph(settings.Advanced.Egress))
+      .ask(parallelism = 5)(egress)
       .viaMat(createEncoder(bufferPool, streamId))(Keep.right)
   }
 
@@ -887,16 +886,26 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     }
   }
 
-  def inboundSink(bufferPool: EnvelopeBufferPool): Sink[InboundEnvelope, Future[Done]] =
+  class Forwarder extends Actor {
+    def receive = {
+      case msg => sender() ! msg
+    }
+  }
+
+  def inboundSink(bufferPool: EnvelopeBufferPool): Sink[InboundEnvelope, Future[Done]] = {
+    val ingress = system.actorOf(Props[Forwarder]())
+
+    implicit val askTimeout: Timeout = 50.seconds
     Flow[InboundEnvelope]
       .via(createDeserializer(bufferPool))
-      .via(Flow.fromGraph(settings.Advanced.Ingress))
+      .ask(parallelism = 5)(ingress)
       .via(if (settings.Advanced.TestMode) new InboundTestStage(this, testState) else Flow[InboundEnvelope])
       .via(flushReplier(expectedAcks = settings.Advanced.InboundLanes))
       .via(terminationHintReplier(inControlStream = false))
       .via(new InboundHandshake(this, inControlStream = false))
       .via(new InboundQuarantineCheck(this))
       .toMat(messageDispatcherSink)(Keep.right)
+  }
 
   def inboundFlow(
       settings: ArterySettings,
