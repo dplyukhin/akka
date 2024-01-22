@@ -231,6 +231,8 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
         processMailbox() //Then deal with messages
       }
     } finally {
+      if (Mailbox.debug) println("Setting " + actor.self + " as idle.")
+      messageQueue.onFinishedProcessingHook()
       setAsIdle() //Volatile write, needed here
       dispatcher.registerForExecution(this, false, false)
     }
@@ -273,9 +275,6 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
         processAllSystemMessages()
         if ((left > 1) && (!dispatcher.isThroughputDeadlineTimeDefined || (System.nanoTime - deadlineNs) < 0))
           processMailbox(left - 1, deadlineNs)
-      }
-      else {
-        messageQueue.onFinishedProcessingHook()
       }
     }
 
