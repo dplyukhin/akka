@@ -232,7 +232,8 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       }
     } finally {
       if (Mailbox.debug) println("Setting " + actor.self + " as idle.")
-      messageQueue.onFinishedProcessingHook()
+      if (!hasMessages && !hasSystemMessages)
+        messageQueue.onFinishedProcessingHook()
       setAsIdle() //Volatile write, needed here
       dispatcher.registerForExecution(this, false, false)
     }
